@@ -115,6 +115,7 @@ void AD779X::adcWrite(unsigned char registerSelection, unsigned char val) {					
 	unsigned char commReg = adcCommRegByte(registerSelection, WRITE_REG);
 	unsigned char incomingByte = SPI.transfer(commReg);	// specify the communication register for a writing operation to the selected register	
 	if (registerSelection == CONFIG_REG) {
+		val = _channelArray[val];
 		_configRegSByte = (_configRegSByte & CHANNEL_MASK) | val;
 		#if DEBUG_ADC
 			Serial.print("Writing Configuration Register FByte: ");
@@ -281,6 +282,18 @@ void AD779X::Setup(unsigned char numberOfChannels, unsigned char firstChannel, u
 	for (int i = 0; i < _numberOfChannels; i++) {
 		_channelArray[i] = channelArray[i];
 	}
+	#if DEBUG_ADC
+		Serial.println("****************************");
+		Serial.println("ADC Setup");
+		Serial.print("Number of channels: ");
+		Serial.print(_numberOfChannels);
+		Serial.print("\tSelected channels: ");
+		for (int i = 0; i < _numberOfChannels; i++) {
+			Serial.print(_channelArray[i]);
+		}
+		Serial.println("");
+		Serial.println("****************************");
+	#endif
 }
 
 void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char updateRate, unsigned char buffer, unsigned char refDet, unsigned char burnoutCurrent, unsigned char powerSwitch) {
@@ -337,9 +350,9 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 		#endif
 	}
 	if (_configRegFByte & 0x07 != gain & 0x07) {									// in case the gain has been changed 
-		_gain = 2 << gain;															// store new gain
+		_gain = 2 << (gain - 1);													// store new gain
 		#if DEBUG_ADC
-			Serial.print("New Gain: ");
+			Serial.print("Setting Gain: ");
 			Serial.println(_gain);
 		#endif
 		if  (gain <= 0x02 || (gain > 0x02 && updateRate <= 0x05) | gain != 0x07) {	// check if calibration is needed - datasheet p.15 - p24
@@ -354,6 +367,7 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 		digitalWrite(_csPin, LOW);				// select the device
 		adcCalibrate(INT_FULL_SCALE_CAL);		// select each channel and calibrate
 		digitalWrite(_csPin, HIGH);				// deselect the device
+		adcFlag(CLEAR, CALIBRATE);				// clear calibration flag
 	}
 	else {										// in case no calibration is needed check
 		if (_configRegFByte != newConfigRegFByte || _configRegSByte != newConfigRegSByte || _modeRegFByte != newModeRegFByte || _modeRegSByte != newModeRegSByte) {
@@ -404,20 +418,28 @@ void AD779X::adcCalibrate(unsigned char calibrationMode) {
 		Serial.println("Invalid Calibration Mode");
 	}
     #endif
-	for (int i = 0; i < _adcChannels; i++) {
+	for (int i = 0; i < _numberOfChannels; i++) {
 		adcWrite(CONFIG_REG, i);
 		adcWrite(MODE_REG, calibrationMode);
+		#if DEBUG_ADC
+			Serial.print("Calibration of channel ");
+			Serial.print(_channelArray[i]);
+			Serial.println(" in progress");
+		#endif	
 		while((adcRead(STATUS_REG) >> 7)) {
-			#if DEBUG_ADC
-			Serial.print("Calibration in progress");
-			Serial.print(".");
-			#endif
+		#if DEBUG_ADC	
+			Serial.println(".");
+		#endif
 		}
-  	#if DEBUG_ADC
-    Serial.println("End of Calibration...");
-    #endif
+		#if DEBUG_ADC
+			Serial.print("Channel ");
+			Serial.print(_channelArray[i]);
+			Serial.println( " calibrated.");
+		#endif
 	}
-	adcFlag(CLEAR, CALIBRATE);
+	 #if DEBUG_ADC
+		Serial.println("End of Calibration...");
+    #endif
 }
 
 bool AD779X::Update() {
@@ -428,7 +450,8 @@ bool AD779X::Update() {
 		#endif
 		digitalWrite(_csPin, LOW);
 		// adcCheck();
-		adcWrite(MODE_REG, SNGL_CONV_MODE);	// initiate first measurement
+		// adcWrite(MODE_REG, SNGL_CONV_MODE);	// initiate first measurement
+		startConversion(_channelIndex);
 		digitalWrite(_csPin, HIGH);
 		_previousMillis = millis();	// start the clock for first time
 		return false;
@@ -473,14 +496,14 @@ bool AD779X::Update() {
 				#if DEBUG_ADC
 					Serial.println("DATA READY!!");
 					Serial.print("Writing data for channel ");
-					Serial.println(_channelIndex, DEC);
+					Serial.println(_channelArray[_channelIndex], DEC);
 				#endif
-				_dataRaw[_channelIndex] = adcRead(DATA_REG);
+				_dataRaw[_channelArray[_channelIndex]] = adcRead(DATA_REG);
 				#if DEBUG_ADC
 					Serial.print("Channel ");
-					Serial.print(_channelIndex, DEC);
+					Serial.print(_channelArray[_channelIndex], DEC);
 					Serial.print(" Raw Value: ");
-					Serial.println(_dataRaw[_channelIndex], HEX);
+					Serial.println(_dataRaw[_channelArray[_channelIndex]], HEX);
 				#endif				
 				_channelIndex = _channelIndex++ >= (_numberOfChannels - 1)  ? 0 : _channelIndex++;
 				startConversion(_channelIndex);
@@ -498,43 +521,44 @@ bool AD779X::Update() {
 	}
 }
 
-unsigned long AD779X::readRaw(unsigned char channel) {
-	if (channel < _numberOfChannels) {	
-		return _dataRaw[_channelArray[channel]];
-	}
-	else {
-		Serial.println("Channel out of range.");
-		return 0;
-	}	
-}
+
 
 void AD779X::startConversion(unsigned char channel) {
 	#if DEBUG_ADC
 		Serial.print("Starting Conversion of channel: ");
-		Serial.println(channel, DEC);
+		Serial.println(_channelArray[channel], DEC);
 	#endif
 	adcWrite(CONFIG_REG, channel);			// select Channel
 	adcWrite(MODE_REG, SNGL_CONV_MODE);		// select Conversion Mode
+}
+unsigned long AD779X::readRaw(unsigned char channel) {
+	// if (channel < _numberOfChannels) {	
+		return _dataRaw[channel];
+	// }
+	// else {
+		// Serial.println("Channel out of range.");
+		// return 0xFFFFFF;
+	// }	
 }
 
 float AD779X::readmV(unsigned char channel) {
 	if (_configRegFByte & 0x10) {											// Unipolar Mode
 		if (adcFlag(ADC_MODEL)) {
-		_datamV[channel] = (float)(_dataRaw[channel])*0.000000059604644775390625*_vRef/_gain*1000;		// datasheet p.23
+		_datamV[_channelArray[channel]] = (float)(_dataRaw[_channelArray[channel]])*0.000000059604644775390625*_vRef/_gain*1000;		// datasheet p.23
 		}
 		else {
-		_datamV[channel] = (float)(_dataRaw[channel])*0.0000152587890625*_vRef/_gain*1000;		// datasheet p.23
+		_datamV[_channelArray[channel]] = (float)(_dataRaw[_channelArray[channel]])*0.0000152587890625*_vRef/_gain*1000;		// datasheet p.23
 		}
 	}
 	else { 																			// Bipolar
 		if (adcFlag(ADC_MODEL)) {
-			_datamV[channel] = ((float)(_dataRaw[channel])*0.00000011920928955078125*_vRef/_gain - 1)*1000;	// datasheet p.23
+			_datamV[_channelArray[channel]] = ((float)(_dataRaw[_channelArray[channel]])*0.00000011920928955078125*_vRef/_gain - 1)*1000;	// datasheet p.23
 		}
 		else {
-			_datamV[channel] = ((float)(_dataRaw[channel])*0.000030517578125*_vRef/_gain - 1)*1000;	// datasheet p.23
+			_datamV[_channelArray[channel]] = ((float)(_dataRaw[_channelArray[channel]])*0.000030517578125*_vRef/_gain - 1)*1000;	// datasheet p.23
 		}
 	}
-	return _datamV[channel];
+	return _datamV[_channelArray[channel]];
 }
 	
 

@@ -130,7 +130,7 @@
 #define CALIBRATE				0x02
 #define CREAD					0x03
 
-#define DEBUG_ADC 				1	// set to 1 for debugging
+#define DEBUG_ADC 				0	// set to 1 for debugging
 
 
 class AD779X
