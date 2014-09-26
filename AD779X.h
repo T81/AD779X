@@ -151,7 +151,7 @@ class AD779X
 	private:
 	 unsigned long _previousMillis, _settleTime, _offsetReg[3], _fullScaleReg[3], _dataRaw[3];
 	 unsigned char _csPin, _nBytes, _adcChannels, _numberOfChannels, _channelIndex, _modeRegFByte, _modeRegSByte, _configRegFByte,_configRegSByte, _adcFlags, _channelArray[3];
-	 float _nBits, _vRef, _N, _gain, _datamV[3];
+	 float _vRef, _gain, _datamV[3];
 	 long _interval;
 		void Init();
 		void adcReset();
@@ -159,7 +159,7 @@ class AD779X
 		void adcWrite(unsigned char registerSelection, unsigned char val);
 		void adcCalibrate(unsigned char mode);
 		void adcFlag(unsigned char bit, unsigned char flag);
-		void adcCheck();
+		// void adcCheck();
 		void startConversion(unsigned char channel);
 		bool adcFlag(unsigned char flag);
 		unsigned char adcCommRegByte(unsigned char registerAddressBits, unsigned char operation);
