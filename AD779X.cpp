@@ -204,13 +204,14 @@ void AD779X::adcResetVars() {
 	_configRegSByte = 0x10;		// default value of Configuration Register Second Byte (datasheet p.16)
 	_modeRegFByte = 0x40;		// default value of Mode Register First Byte (datasheet p.14)
 	_modeRegSByte = 0x0A;		// default value of Mode Register Second Byte (datasheet p.14)
+	_adcPresent = false;		// default value of chip present indicator
 }
 
  void AD779X::Init() {
 	#if DEBUG_ADC
 		Serial.println("Start of Init()");
 	#endif
-	adcResetVars();					// reset variables to default state
+	adcResetVars();						// reset variables to default state
 	adcReset();							// reset the device
 
 	if (adcRead(STATUS_REG) & 0x08) {	// store adc model
@@ -260,8 +261,11 @@ void AD779X::Begin(int csPin) {
 		#if DEBUG_ADC
 			Serial.println("NO CHIP PRESENT");
 		#endif
-		while(1){
-		}
+		// while(1){
+		// }
+	}
+	else {
+		_adcPresent = true;
 	}
 	digitalWrite(_csPin, HIGH);				// deselect the device
 	#if DEBUG_ADC
@@ -300,89 +304,91 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 	unsigned char newConfigRegSByte = ((refDet << 5) & 0x20) | (buffer << 4) & 0x10;							// store values passed by user
 	unsigned char newModeRegFByte = (powerSwitch << 4) & 0x10;													// store values passed by user
 	unsigned char newModeRegSByte = updateRate & 0x0F;															// store values passed by user
-	if (_modeRegSByte & 0x0F != updateRate) { 																	// check if update rate has been changed
-		if (updateRate == 0x01) {
-		_settleTime = 4;
-		}
-		else if (updateRate == 0x02) {
-		_settleTime = 8;
-		}
-		else if (updateRate == 0x03) {
-		_settleTime = 16;
-		}
-		else if (updateRate == 0x04) {
-		_settleTime = 32;
-		}
-		else if (updateRate == 0x05) {
-		_settleTime = 40;
-		}
-		else if (updateRate == 0x06) {
-		_settleTime = 48;
-		}
-		else if (updateRate == 0x07) {
-		_settleTime = 60;
-		}
-		else if (updateRate == 0x08) {
-		_settleTime = 101;
-		}
-		else if (updateRate == 0x09 || updateRate == 0x0A) {
-		_settleTime = 120;
-		}
-		else if (updateRate == 0x0B) {
-		_settleTime = 160;
-		}
-		else if (updateRate == 0x0C) {
-		_settleTime = 200;
-		}
-		else if (updateRate == 0x0D) {
-		_settleTime = 240;
-		}
-		else if (updateRate == 0x0E) {
-		_settleTime = 320;
-		}
-		else if (updateRate == 0x0F) {
-		_settleTime = 480;
-		}
-		#if DEBUG_ADC
-			Serial.print("New Update Rate. Settling time: ");
-			Serial.println(updateRate);
-		#endif
-	}
-	if (_configRegFByte & 0x07 != gain & 0x07) {									// in case the gain has been changed 
-		_gain = 2 << (gain - 1);													// store new gain
-		#if DEBUG_ADC
-			Serial.print("Setting Gain: ");
-			Serial.println(_gain);
-		#endif
-		if  (gain <= 0x02 || (gain > 0x02 && updateRate <= 0x05) | gain != 0x07) {	// check if calibration is needed - datasheet p.15 - p24
-			adcFlag(SET, CALIBRATE);												// raise the calibration flag if needed
-		}
-	}
-	if (adcFlag(CALIBRATE)) {					// if calibration is needed
-		_configRegFByte = newConfigRegFByte;	// store new Configuration Register FByte
-		_configRegSByte = newConfigRegSByte;	// store new Configuration Register SByte
-		_modeRegFByte = newModeRegFByte;		// store new Mode Register FByte
-		_modeRegSByte = newModeRegSByte;		// store new Mode Register	SByte
-		digitalWrite(_csPin, LOW);				// select the device
-		adcCalibrate(INT_FULL_SCALE_CAL);		// select each channel and calibrate
-		digitalWrite(_csPin, HIGH);				// deselect the device
-		adcFlag(CLEAR, CALIBRATE);				// clear calibration flag
-	}
-	else {										// in case no calibration is needed check
-		if (_configRegFByte != newConfigRegFByte || _configRegSByte != newConfigRegSByte || _modeRegFByte != newModeRegFByte || _modeRegSByte != newModeRegSByte) {
+	if (_adcPresent) {																							// chip is present
+		if (_modeRegSByte & 0x0F != updateRate) { 																// check if update rate has been changed
+			if (updateRate == 0x01) {
+			_settleTime = 4;
+			}
+			else if (updateRate == 0x02) {
+			_settleTime = 8;
+			}
+			else if (updateRate == 0x03) {
+			_settleTime = 16;
+			}
+			else if (updateRate == 0x04) {
+			_settleTime = 32;
+			}
+			else if (updateRate == 0x05) {
+			_settleTime = 40;
+			}
+			else if (updateRate == 0x06) {
+			_settleTime = 48;
+			}
+			else if (updateRate == 0x07) {
+			_settleTime = 60;
+			}
+			else if (updateRate == 0x08) {
+			_settleTime = 101;
+			}
+			else if (updateRate == 0x09 || updateRate == 0x0A) {
+			_settleTime = 120;
+			}
+			else if (updateRate == 0x0B) {
+			_settleTime = 160;
+			}
+			else if (updateRate == 0x0C) {
+			_settleTime = 200;
+			}
+			else if (updateRate == 0x0D) {
+			_settleTime = 240;
+			}
+			else if (updateRate == 0x0E) {
+			_settleTime = 320;
+			}
+			else if (updateRate == 0x0F) {
+			_settleTime = 480;
+			}
 			#if DEBUG_ADC
-				Serial.println("Setting new values");
+				Serial.print("New Update Rate. Settling time: ");
+				Serial.println(updateRate);
 			#endif
-			_configRegFByte = newConfigRegFByte;
-			_configRegSByte = newConfigRegSByte;
-			_modeRegFByte = newModeRegFByte;
-			_modeRegSByte = newModeRegSByte;
-			digitalWrite(_csPin, LOW);				// select the device
-			adcWrite(CONFIG_REG, 0x00);
-			adcWrite(MODE_REG, IDLE_MODE);			
-			digitalWrite(_csPin, HIGH);				// deselect the device
 		}
-	}		
+		if (_configRegFByte & 0x07 != gain & 0x07) {									// in case the gain has been changed 
+			_gain = 2 << (gain - 1);													// store new gain
+			#if DEBUG_ADC
+				Serial.print("Setting Gain: ");
+				Serial.println(_gain);
+			#endif
+			if  (gain <= 0x02 || (gain > 0x02 && updateRate <= 0x05) | gain != 0x07) {	// check if calibration is needed - datasheet p.15 - p24
+				adcFlag(SET, CALIBRATE);												// raise the calibration flag if needed
+			}
+		}
+		if (adcFlag(CALIBRATE)) {					// if calibration is needed
+			_configRegFByte = newConfigRegFByte;	// store new Configuration Register FByte
+			_configRegSByte = newConfigRegSByte;	// store new Configuration Register SByte
+			_modeRegFByte = newModeRegFByte;		// store new Mode Register FByte
+			_modeRegSByte = newModeRegSByte;		// store new Mode Register	SByte
+			digitalWrite(_csPin, LOW);				// select the device
+			adcCalibrate(INT_FULL_SCALE_CAL);		// select each channel and calibrate
+			digitalWrite(_csPin, HIGH);				// deselect the device
+			adcFlag(CLEAR, CALIBRATE);				// clear calibration flag
+		}
+		else {										// in case no calibration is needed check
+			if (_configRegFByte != newConfigRegFByte || _configRegSByte != newConfigRegSByte || _modeRegFByte != newModeRegFByte || _modeRegSByte != newModeRegSByte) {
+				#if DEBUG_ADC
+					Serial.println("Setting new values");
+				#endif
+				_configRegFByte = newConfigRegFByte;
+				_configRegSByte = newConfigRegSByte;
+				_modeRegFByte = newModeRegFByte;
+				_modeRegSByte = newModeRegSByte;
+				digitalWrite(_csPin, LOW);				// select the device
+				adcWrite(CONFIG_REG, 0x00);
+				adcWrite(MODE_REG, IDLE_MODE);			
+				digitalWrite(_csPin, HIGH);				// deselect the device
+			}
+		}		
+	}
 }
 
 // void AD779X::adcCheck() {
@@ -423,13 +429,10 @@ void AD779X::adcCalibrate(unsigned char calibrationMode) {
 			Serial.print("Calibration of channel ");
 			Serial.print(_channelArray[i]);
 			Serial.println(" in progress");
-		#endif	
-		while((adcRead(STATUS_REG) >> 7)) {
-			#if DEBUG_ADC	
+		
+			while((adcRead(STATUS_REG) >> 7)) {
 				Serial.println(".");
-			#endif
-		}
-		#if DEBUG_ADC
+			}
 			Serial.print("Channel ");
 			Serial.print(_channelArray[i]);
 			Serial.println( " calibrated.");
@@ -441,84 +444,86 @@ void AD779X::adcCalibrate(unsigned char calibrationMode) {
 }
 
 bool AD779X::Update() {
-	if (!adcFlag(FIRST_MEASUREMENT)) {
-		adcFlag(SET, FIRST_MEASUREMENT);
-		#if DEBUG_ADC
-			Serial.println("Starting first measurement");
-		#endif
-		digitalWrite(_csPin, LOW);
-		startConversion(_channelIndex);
-		digitalWrite(_csPin, HIGH);
-		_previousMillis = millis();	// start the clock for first time
-		return false;
-	}
-	else {
-		unsigned long timePassed = millis() - _previousMillis;	// store time passed since last check
-		#if DEBUG_ADC
-			Serial.print("Settle Time: ");
-			Serial.println(_settleTime);
-		#endif
-		if (timePassed >= _settleTime) {						// if settle time has passed				
+	if (_adcPresent) {
+		if (!adcFlag(FIRST_MEASUREMENT)) {
+			adcFlag(SET, FIRST_MEASUREMENT);
 			#if DEBUG_ADC
-				Serial.print("Time Passed(ms): ");
-				Serial.println(timePassed);
+				Serial.println("Starting first measurement");
 			#endif
 			digitalWrite(_csPin, LOW);
-			unsigned long statusByte = adcRead(STATUS_REG);
-			if (statusByte >> 7) {						// and no data available yet
-				#if DEBUG_ADC
-					Serial.println("No data available yet.");
-				#endif
-				if (timePassed > 4*_settleTime) {				// then if it takes too long
-					#if DEBUG_ADC
-						Serial.print("Timeout (ms): ");
-						Serial.println(timePassed);
-					#endif
-					adcReset();									// reset the device
-					Config(_configRegFByte & 0x07, 
-						   _configRegFByte & 0x10, 
-						   _modeRegSByte & 0x0F, 
-						   _configRegSByte & 0x10, 
-						   _configRegSByte & 0x20, 
-						   _configRegFByte & 0x0F, 
-						   _modeRegFByte & 0x10);				// reconfigure the ADC according the last user settings
-					adcFail++;									// and store a failed attempt
-				}
-				digitalWrite(_csPin, HIGH);						// deselect the device
-				return false;
-			}
-			else {  											// else get data, start the measurement of the next channel and reset the clock
-				if (statusByte & 0x40) {
-					#if DEBUG_ADC
-						Serial.print("Warning!! Channel ");
-						Serial.print(_channelArray[_channelIndex]);
-						Serial.println(" Overrange or Underrange");
-					#endif
-				}
-				#if DEBUG_ADC
-					Serial.println("DATA READY!!");
-					Serial.print("Writing data for channel ");
-					Serial.println(_channelArray[_channelIndex], DEC);
-				#endif
-				_dataRaw[_channelArray[_channelIndex]] = adcRead(DATA_REG);
-				#if DEBUG_ADC
-					Serial.print("Channel ");
-					Serial.print(_channelArray[_channelIndex], DEC);
-					Serial.print(" Raw Value: ");
-					Serial.println(_dataRaw[_channelArray[_channelIndex]], HEX);
-				#endif				
-				_channelIndex = _channelIndex++ >= (_numberOfChannels - 1)  ? 0 : _channelIndex++;
-				startConversion(_channelIndex);
-				digitalWrite(_csPin, HIGH);
-				_previousMillis = millis();
-				return true;
-			}
+			startConversion(_channelIndex);
+			digitalWrite(_csPin, HIGH);
+			_previousMillis = millis();	// start the clock for first time
+			return false;
 		}
 		else {
+			unsigned long timePassed = millis() - _previousMillis;	// store time passed since last check
 			#if DEBUG_ADC
-				Serial.println("Time passed < Settle time.");
+				Serial.print("Settle Time: ");
+				Serial.println(_settleTime);
 			#endif
-			return false;
+			if (timePassed >= _settleTime) {						// if settle time has passed				
+				#if DEBUG_ADC
+					Serial.print("Time Passed(ms): ");
+					Serial.println(timePassed);
+				#endif
+				digitalWrite(_csPin, LOW);
+				unsigned long statusByte = adcRead(STATUS_REG);
+				if (statusByte >> 7) {						// and no data available yet
+					#if DEBUG_ADC
+						Serial.println("No data available yet.");
+					#endif
+					if (timePassed > 4*_settleTime) {				// then if it takes too long
+						#if DEBUG_ADC
+							Serial.print("Timeout (ms): ");
+							Serial.println(timePassed);
+						#endif
+						adcReset();									// reset the device
+						Config(_configRegFByte & 0x07, 
+							   _configRegFByte & 0x10, 
+							   _modeRegSByte & 0x0F, 
+							   _configRegSByte & 0x10, 
+							   _configRegSByte & 0x20, 
+							   _configRegFByte & 0x0F, 
+							   _modeRegFByte & 0x10);				// reconfigure the ADC according the last user settings
+						adcFail++;									// and store a failed attempt
+					}
+					digitalWrite(_csPin, HIGH);						// deselect the device
+					return false;
+				}
+				else {  											// else get data, start the measurement of the next channel and reset the clock
+					if (statusByte & 0x40) {
+						#if DEBUG_ADC
+							Serial.print("Warning!! Channel ");
+							Serial.print(_channelArray[_channelIndex]);
+							Serial.println(" Overrange or Underrange");
+						#endif
+					}
+					#if DEBUG_ADC
+						Serial.println("DATA READY!!");
+						Serial.print("Writing data for channel ");
+						Serial.println(_channelArray[_channelIndex], DEC);
+					#endif
+					_dataRaw[_channelArray[_channelIndex]] = adcRead(DATA_REG);
+					#if DEBUG_ADC
+						Serial.print("Channel ");
+						Serial.print(_channelArray[_channelIndex], DEC);
+						Serial.print(" Raw Value: ");
+						Serial.println(_dataRaw[_channelArray[_channelIndex]], HEX);
+					#endif				
+					_channelIndex = _channelIndex++ >= (_numberOfChannels - 1)  ? 0 : _channelIndex++;
+					startConversion(_channelIndex);
+					digitalWrite(_csPin, HIGH);
+					_previousMillis = millis();
+					return true;
+				}
+			}
+			else {
+				#if DEBUG_ADC
+					Serial.println("Time passed < Settle time.");
+				#endif
+				return false;
+			}
 		}
 	}
 }

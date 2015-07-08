@@ -149,6 +149,7 @@ class AD779X
 		float readmV(unsigned char channel);
 
 	private:
+	bool _adcPresent;
 	 unsigned long _previousMillis, _settleTime, _offsetReg[3], _fullScaleReg[3], _dataRaw[3];
 	 unsigned char _csPin, _nBytes, _adcChannels, _numberOfChannels, _channelIndex, _modeRegFByte, _modeRegSByte, _configRegFByte,_configRegSByte, _adcFlags, _channelArray[3];
 	 float _vRef, _gain, _datamV[3];
