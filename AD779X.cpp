@@ -354,7 +354,8 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 			#endif
 		}
 		if (_configRegFByte & 0x07 != gain & 0x07) {									// in case the gain has been changed 
-			_gain = 2 << (gain - 1);													// store new gain
+			// _gain = 2 << (gain - 1);													// store new gain
+			_gain = 1 << gain;
 			#if DEBUG_ADC
 				Serial.print("Setting Gain: ");
 				Serial.println(_gain);
