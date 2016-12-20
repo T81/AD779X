@@ -257,7 +257,8 @@ void AD779X::Begin(int csPin) {
 	digitalWrite(_csPin, LOW);				// select the device
 	Init();
 	long statusByte = StatusReg();
-	if (!statusByte) {
+	// if (!statusByte || (statusByte & 0x16)) {
+	if (!(statusByte & 0x80)) {
 		#if DEBUG_ADC
 			Serial.println("NO CHIP PRESENT");
 		#endif
