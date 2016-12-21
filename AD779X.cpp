@@ -111,9 +111,9 @@ unsigned long AD779X::adcRead(unsigned char registerSelection) {
 	}
 }
 
-void AD779X::adcWrite(unsigned char registerSelection, unsigned char val) {							// write Mode Register and select Operating Mode OR write Offset/Full-Scale register value
+void AD779X::adcWrite(unsigned char registerSelection, unsigned char val) {	// write Mode Register and select Operating Mode OR write Offset/Full-Scale register value
 	unsigned char commReg = adcCommRegByte(registerSelection, WRITE_REG);
-	unsigned char incomingByte = SPI.transfer(commReg);	// specify the communication register for a writing operation to the selected register	
+	unsigned char incomingByte = SPI.transfer(commReg);						// specify the communication register for a writing operation to the selected register	
 	if (registerSelection == CONFIG_REG) {
 		_configRegSByte = (_configRegSByte & CHANNEL_MASK) | val;
 		#if DEBUG_ADC
@@ -122,8 +122,8 @@ void AD779X::adcWrite(unsigned char registerSelection, unsigned char val) {					
 			Serial.print("Writing Configuration Register SByte: ");
 			Serial.println(_configRegSByte, BIN);			
 		#endif
-		incomingByte = SPI.transfer(_configRegFByte);								// write CONFIGURATION REGISTER FByte
-		incomingByte = SPI.transfer(_configRegSByte);							// write CONFIGURATION REGISTER SByte - val: Channel Select
+		incomingByte = SPI.transfer(_configRegFByte);						// write CONFIGURATION REGISTER FByte
+		incomingByte = SPI.transfer(_configRegSByte);						// write CONFIGURATION REGISTER SByte - val: Channel Select
 	}
 	else if (registerSelection == MODE_REG) {
 		_modeRegFByte = (_modeRegFByte & OPERATING_MODE_MASK) | val;
@@ -134,9 +134,9 @@ void AD779X::adcWrite(unsigned char registerSelection, unsigned char val) {					
 			Serial.println(_modeRegSByte, BIN);			
 		#endif
 		incomingByte = SPI.transfer(_modeRegFByte);							// write MODE REGISTER FByte - val: Operating Mode
-		incomingByte = SPI.transfer(_modeRegSByte);									// write MODE REGISTER SByte
+		incomingByte = SPI.transfer(_modeRegSByte);							// write MODE REGISTER SByte
 	}
-	else if (registerSelection == IO_REG) {											// write IO REGISTER
+	else if (registerSelection == IO_REG) {									// write IO REGISTER
 		incomingByte = SPI.transfer(val);
 	}
 	else if (registerSelection == OFFSET_REG || registerSelection == FULL_SCALE_REG) {	// write OFFSET or FULL-SCALE REGISTER (16-bits for AD7798 / 24-bits for AD7799)
@@ -207,6 +207,7 @@ void AD779X::adcResetVars() {
 	_adcPresent = false;		// default value of chip present indicator
 }
 
+
  void AD779X::Init() {
 	#if DEBUG_ADC
 		Serial.println("Start of Init()");
@@ -257,13 +258,10 @@ void AD779X::Begin(int csPin) {
 	digitalWrite(_csPin, LOW);				// select the device
 	Init();
 	long statusByte = StatusReg();
-	// if (!statusByte || (statusByte & 0x16)) {
 	if (!(statusByte & 0x80)) {
 		#if DEBUG_ADC
 			Serial.println("NO CHIP PRESENT");
 		#endif
-		// while(1){
-		// }
 	}
 	else {
 		_adcPresent = true;
@@ -355,7 +353,6 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 			#endif
 		}
 		if (_configRegFByte & 0x07 != gain & 0x07) {									// in case the gain has been changed 
-			// _gain = 2 << (gain - 1);													// store new gain
 			_gain = 1 << gain;
 			#if DEBUG_ADC
 				Serial.print("Setting Gain: ");
@@ -384,10 +381,10 @@ void AD779X::Config(unsigned char gain, unsigned char coding, unsigned char upda
 				_configRegSByte = newConfigRegSByte;
 				_modeRegFByte = newModeRegFByte;
 				_modeRegSByte = newModeRegSByte;
-				digitalWrite(_csPin, LOW);				// select the device
+				digitalWrite(_csPin, LOW);			// select the device
 				adcWrite(CONFIG_REG, 0x00);
 				adcWrite(MODE_REG, IDLE_MODE);			
-				digitalWrite(_csPin, HIGH);				// deselect the device
+				digitalWrite(_csPin, HIGH);			// deselect the device
 			}
 		}		
 	}
@@ -471,7 +468,7 @@ bool AD779X::Update() {
 				#endif
 				digitalWrite(_csPin, LOW);
 				unsigned long statusByte = adcRead(STATUS_REG);
-				if (statusByte >> 7) {						// and no data available yet
+				if (statusByte >> 7) {								// and no data available yet
 					#if DEBUG_ADC
 						Serial.println("No data available yet.");
 					#endif
