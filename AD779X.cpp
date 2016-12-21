@@ -58,7 +58,7 @@
 unsigned long AD779X::adcRead(unsigned char registerSelection) {
 	unsigned long registerValue = 0;
 	unsigned char incomingByte = 0;
-	if (!(registerSelection == DATA_REG && adcFlag(CREAD))) {						// in CREAD there is no need to specify the Communication register for a read to Data register
+	if (!(registerSelection == DATA_REG && adcFlag(CREAD))) {					// in CREAD there is no need to specify the Communication register for a read to Data register
 		unsigned char commReg = adcCommRegByte(registerSelection, READ_REG);
 		incomingByte = SPI.transfer(commReg);
 	}
@@ -81,8 +81,8 @@ unsigned long AD779X::adcRead(unsigned char registerSelection) {
 			Serial.print("First Byte: ");
 			Serial.print(incomingByte, BIN);
 		#endif
-		registerValue = incomingByte << 8; 											// store selected register FByte
-		incomingByte = SPI.transfer(STUFFIN);                      						// read selected register S(econd)Byte
+		registerValue = incomingByte << 8; 		// store selected register FByte
+		incomingByte = SPI.transfer(STUFFIN);	// read selected register S(econd)Byte
 		#if DEBUG_ADC
 			Serial.print(" Second Byte: ");
 			Serial.print(incomingByte, BIN);
@@ -97,8 +97,8 @@ unsigned long AD779X::adcRead(unsigned char registerSelection) {
 		}
 		else {
 			registerValue <<= 8;
-			incomingByte = SPI.transfer(STUFFIN);											// read selected register Third Byte
-			registerValue |= incomingByte;												// store 24-bit register value
+			incomingByte = SPI.transfer(STUFFIN);	// read selected register Third Byte
+			registerValue |= incomingByte;			// store 24-bit register value
 			registerValue &= 0xFFFFFF;
 			#if DEBUG_ADC
 				Serial.print(" Third Byte: ");
@@ -578,8 +578,8 @@ void AD779X::cRead(unsigned char channel, unsigned char enter) {
 		incomingByte = SPI.transfer(ENTER_CREAD);
 	}
 	else if (!enter && adcFlag(CREAD)) {
-	adcFlag(CLEAR, CREAD);
-	incomingByte = SPI.transfer(EXIT_CREAD);
+		adcFlag(CLEAR, CREAD);
+		incomingByte = SPI.transfer(EXIT_CREAD);
 	}
 }
 

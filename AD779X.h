@@ -125,8 +125,8 @@
 #define CLEAR					0x00
 #define SET						0x01
 
-#define ADC_MODEL				0X00
-#define FIRST_MEASUREMENT		0X01
+#define ADC_MODEL				0x00
+#define FIRST_MEASUREMENT		0x01
 #define CALIBRATE				0x02
 #define CREAD					0x03
 
