@@ -1,6 +1,6 @@
-/* Sensirion EM1 series 
- Interfacing Sensirion Mass Flow Meter EM1NR (20000 mln/min) with Arduino Mega2560
- Author: CPL
+/* AD779X library
+ Reading all channels of an AD7799 ADC
+ Author: T81
  http://www.analog.com/en/analog-to-digital-converters/ad-converters/ad7799/products/product.html
 */
 
@@ -34,14 +34,3 @@ void loop() {
     }
   }
 }
-
-
-
-
-
-
-
-
-
-
-

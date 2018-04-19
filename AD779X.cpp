@@ -29,8 +29,8 @@
 	
 /* General purpose functions (Private)
  ************************************************************************************************************************
- * adcCommRegByte(MODE_REG, READ_REG)					function to create the byte for a Read operation to the Mode register
- * adcRead(ID_REG)									return the corresponding register value
+ * adcCommRegByte(MODE_REG, READ_REG)								function to create the byte for a Read operation to the Mode register
+ * adcRead(ID_REG)													return the corresponding register value
  * adcWrite(unsigned char registerSelection, unsigned char val)		write the First and Second byte of the corresponding register
  ************************************************************************************************************************
  */

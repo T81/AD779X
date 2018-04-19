@@ -23,14 +23,12 @@ void setup() {
 }
 
 void loop() {
-  if (myADC.Update()) {                      // if new values available
-    for (int i = 0; i < 3; i++) {            // print RAW and mV values
-      Serial.print("CH");
-      Serial.print(i);
+  if (myADC.Update()) {                      // if new values available, print RAW and mV values
+      Serial.print("CH0");
       Serial.print(" - RAW: ");
-      Serial.print(myADC.readRaw(i), HEX);
+      Serial.print(myADC.readRaw(0), HEX);
       Serial.print("\tmV: ");
-      Serial.println(myADC.readmV(i), HEX); 
+      Serial.println(myADC.readmV(0), HEX); 
     }
   }
 }
